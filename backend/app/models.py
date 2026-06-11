@@ -15,6 +15,10 @@ class URLRead(BaseModel):
     created_at: datetime
 
 
+class URLDetail(URLRead):
+    recent_pings: list["PingHistoryRead"] = []
+
+
 class PingHistoryRead(BaseModel):
     id: int
     url_id: int
