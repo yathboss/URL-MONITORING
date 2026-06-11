@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { URLItem } from '../../types';
 import { StatusDot } from '../ui/StatusDot';
+import { Badge } from '../ui/Badge';
 import styles from './UrlCard.module.css';
 
 interface UrlCardProps {
@@ -7,14 +9,38 @@ interface UrlCardProps {
   onDelete: (id: number) => void;
 }
 
+function timeAgo(isoString: string): string {
+  const seconds = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
+
 export function UrlCard({ url, onDelete }: UrlCardProps) {
-  let relativeTime = 'Just now';
-  try {
-    const d = new Date(url.created_at);
-    relativeTime = d.toLocaleString();
-  } catch (e) {
-    // Ignore invalid dates in this basic scaffold
-  }
+  const [isConfirming, setIsConfirming] = useState(false);
+
+  useEffect(() => {
+    let timer: number;
+    if (isConfirming) {
+      timer = window.setTimeout(() => setIsConfirming(false), 4000);
+    }
+    return () => window.clearTimeout(timer);
+  }, [isConfirming]);
+
+  const handleDeleteClick = () => {
+    if (isConfirming) {
+      onDelete(url.id);
+    } else {
+      setIsConfirming(true);
+    }
+  };
+
+  const getBadgeVariant = (status: string) => {
+    if (status === 'UP') return 'success';
+    if (status === 'DOWN') return 'danger';
+    return 'neutral';
+  };
 
   return (
     <div className={styles.card}>
@@ -22,12 +48,26 @@ export function UrlCard({ url, onDelete }: UrlCardProps) {
         <div className={styles.name}>{url.name}</div>
         <StatusDot status={url.status} />
       </div>
-      <div className={styles.address}>{url.web_address}</div>
+      <div className={styles.address}>
+        <div style={{ marginBottom: 8 }}>{url.web_address}</div>
+        <Badge variant={getBadgeVariant(url.status)} label={url.status} />
+      </div>
       <div className={styles.footer}>
-        <div className={styles.time}>Last checked: {relativeTime}</div>
-        <button className={styles.deleteBtn} onClick={() => onDelete(url.id)}>
-          Delete
-        </button>
+        <div className={styles.time}>Added: {timeAgo(url.created_at)}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {isConfirming && (
+            <button 
+              className={styles.deleteBtn} 
+              style={{ border: 'none', background: 'transparent', color: '#666' }}
+              onClick={() => setIsConfirming(false)}
+            >
+              cancel
+            </button>
+          )}
+          <button className={styles.deleteBtn} onClick={handleDeleteClick}>
+            {isConfirming ? 'Confirm?' : 'Delete'}
+          </button>
+        </div>
       </div>
     </div>
   );
