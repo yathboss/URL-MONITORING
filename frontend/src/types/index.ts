@@ -17,3 +17,16 @@ export interface AddURLPayload {
   web_address: string;
   name: string;
 }
+
+export interface URLDetail extends URLItem {
+  recent_pings: PingHistoryRead[];
+}
+
+export interface PingHistoryRead {
+  id: number;
+  url_id: number;
+  checked_at: string;
+  response_time_ms: number | null;
+  status_code: number | null;
+  is_up: boolean;
+}
