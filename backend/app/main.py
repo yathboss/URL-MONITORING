@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
 
 
 def api_key_dependency(request: Request) -> None:
-    exempt_paths = {"/healthz", "docs", "/openapi.json", "/redoc"}
+    exempt_paths = {"/healthz", "/docs", "/openapi.json", "/redoc"}
     if request.method == "GET" and request.url.path in exempt_paths:
         return
 
