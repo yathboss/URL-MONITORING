@@ -1,0 +1,58 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "backend: create venv",
+      "type": "shell",
+      "command": "uv",
+      "args": [
+        "venv",
+        ".venv",
+        "--python",
+        "3.12"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "backend: install dependencies",
+      "type": "shell",
+      "command": "uv",
+      "args": [
+        "pip",
+        "install",
+        "-r",
+        "requirements.txt"
+        ,
+        "-p",
+        ".venv\\Scripts\\python.exe"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "backend: run api",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe",
+      "args": [
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--reload",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}
