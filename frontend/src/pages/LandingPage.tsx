@@ -22,9 +22,69 @@ export function LandingPage() {
       </nav>
 
       <section className="landing-hero" aria-labelledby="landing-title">
+        <div className="hero-panel-map">
+          <div className="map-header">GEO-SPECIFIC STATUS</div>
+          
+          <div className="map-layer">
+            <img src="/world-map.svg" alt="World Map" className="world-map-img" />
+            <svg viewBox="0 0 1000 500" className="map-connections" fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5">
+              <path d="M 450 160 Q 360 140 280 200" strokeDasharray="4 4" />
+              <path d="M 450 160 Q 600 180 750 275" strokeDasharray="4 4" />
+              <path d="M 450 160 Q 400 250 350 350" strokeDasharray="4 4" />
+              <path d="M 450 160 Q 650 300 880 400" strokeDasharray="4 4" />
+              <circle cx="450" cy="160" r="40" stroke="rgba(0,0,0,0.05)" />
+              <circle cx="450" cy="160" r="100" stroke="rgba(0,0,0,0.03)" />
+              <circle cx="450" cy="160" r="180" stroke="rgba(0,0,0,0.02)" />
+            </svg>
+          </div>
+          
+          <div className="map-pin pin-lhr">
+            <span className="pin-dot"></span>
+            <div className="pin-label"><strong>LHR</strong><br/>Lat 12ms | Ok</div>
+          </div>
+          <div className="map-pin pin-nyc">
+            <span className="pin-dot"></span>
+            <div className="pin-label"><strong>NYC</strong><br/>Lat 14ms | Ok</div>
+          </div>
+          <div className="map-pin pin-sin">
+            <span className="pin-dot"></span>
+            <div className="pin-label"><strong>Singapore</strong><br/>Lat 20ms | Ok</div>
+          </div>
+          <div className="map-pin pin-sao">
+            <span className="pin-dot"></span>
+            <div className="pin-label"><strong>São Paulo</strong><br/>Lat 32ms | Ok</div>
+          </div>
+          <div className="map-pin pin-syd">
+            <span className="pin-dot"></span>
+            <div className="pin-label"><strong>Sydney</strong><br/>Lat 28ms | Ok</div>
+          </div>
+
+          <div className="map-card card-global">
+            <span>Global reach</span>
+            <strong>12 regions</strong>
+          </div>
+          
+          <div className="map-card card-latency">
+            <span>LATENCY PROFILE</span>
+            <div className="latency-mini-chart">
+               <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                 <path d="M0,30 L10,28 L20,32 L30,25 L40,28 L50,15 L60,25 L70,35 L80,5 L90,28 L100,25" fill="none" stroke="#A9A195" strokeWidth="2"/>
+                 <path d="M0,40 L0,30 L10,28 L20,32 L30,25 L40,28 L50,15 L60,25 L70,35 L80,5 L90,28 L100,25 L100,40 Z" fill="rgba(0,0,0,0.04)"/>
+               </svg>
+            </div>
+            <div className="latency-stats">
+              Avg. Latency: 18ms<br/>P95: 22ms
+            </div>
+          </div>
+
+          <div className="map-footer">
+            <strong>GLOBAL COVERAGE:</strong> 9 aggregate status from 12 regional check points. Detailed region map active.
+          </div>
+        </div>
+
         <div className="landing-copy">
           <p className="landing-kicker">The art of precision</p>
-          <h1 id="landing-title">Signal Ascendant</h1>
+          <h1 id="landing-title">Signal<br/>Ascendant</h1>
           <p className="landing-lede">
             A premium command room for tracking uptime, latency, and live service health with
             quiet precision.
@@ -37,34 +97,17 @@ export function LandingPage() {
               View signals
             </a>
           </div>
-        </div>
-
-        <div className="landing-stage" aria-hidden="true">
-          <div className="hero-panel">
-            <div className="hero-panel-glow" />
-            <div className="orbital-ring ring-one" />
-            <div className="orbital-ring ring-two" />
-            <div className="signal-core">
-              <span />
+          
+          <div className="map-card card-target">
+            <div className="target-live">
+              <span className="live-dot"></span> LIVE
             </div>
-            <div className="scan-lines">
-              {Array.from({ length: 7 }, (_, index) => (
-                <i key={index} style={{ width: `${92 - index * 9}%` }} />
-              ))}
+            <div className="target-icon"></div>
+            <div className="target-info">
+              <strong>TARGET CARD</strong>
+              <span>https://api.myapp.com/v1/health</span>
             </div>
           </div>
-
-          <div className="floating-card card-top">
-            <span>Global watch</span>
-            <strong>12 regions</strong>
-          </div>
-          <div className="floating-card card-side">
-            <span>Response</span>
-            <strong>live</strong>
-          </div>
-          <div className="image-tile tile-one" />
-          <div className="image-tile tile-two" />
-          <div className="image-tile tile-three" />
         </div>
       </section>
 
