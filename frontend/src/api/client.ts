@@ -31,6 +31,11 @@ export const deleteUrl = async (id: number): Promise<void> => {
   await client.delete(`/api/v1/urls/${id}`);
 };
 
+export const updateUrl = async (id: number, payload: { name?: string; web_address?: string }): Promise<URLItem> => {
+  const response = await client.put<URLItem>(`/api/v1/urls/${id}`, payload);
+  return response.data;
+};
+
 export const getUrlDetail = async (id: number): Promise<URLDetail> => {
   const response = await client.get<URLDetail>(`/api/v1/urls/${id}`);
   return response.data;

@@ -7,6 +7,11 @@ class URLCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
 
 
+class URLUpdate(BaseModel):
+    web_address: HttpUrl | None = None
+    name: str | None = Field(None, min_length=1, max_length=100)
+
+
 class URLRead(BaseModel):
     id: int
     web_address: str

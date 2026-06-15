@@ -74,11 +74,15 @@ export function useUrls() {
     }
   };
 
+  const editUrl = (updatedUrl: URLItem) => {
+    setUrls((prev) => prev.map((u) => (u.id === updatedUrl.id ? updatedUrl : u)));
+  };
+
   const retryFetch = () => {
     fetchUrls();
   };
 
   const clearError = () => setError(null);
 
-  return { urls, isLoading, error, addUrl, deleteUrl, retryFetch, clearError };
+  return { urls, isLoading, error, addUrl, deleteUrl, editUrl, retryFetch, clearError };
 }

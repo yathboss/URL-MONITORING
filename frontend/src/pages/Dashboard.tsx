@@ -11,7 +11,7 @@ import { buildWsUrl, useWebSocket } from '../hooks/useWebSocket';
 import { useLiveStatus } from '../hooks/useLiveStatus';
 
 export function Dashboard() {
-  const { urls, isLoading, error, addUrl, deleteUrl, retryFetch, clearError } = useUrls();
+  const { urls, isLoading, error, addUrl, deleteUrl, editUrl, retryFetch, clearError } = useUrls();
   const [showAddForm, setShowAddForm] = useState(false);
   const wsUrl = buildWsUrl(import.meta.env.VITE_API_BASE_URL);
   const { lastMessage, isConnected, connectionError } = useWebSocket(wsUrl);
@@ -71,7 +71,7 @@ export function Dashboard() {
       {isLoading && urls.length === 0 && renderSkeletons()}
       {!isLoading && error && urls.length === 0 && renderErrorState()}
       {!isLoading && !error && urls.length === 0 && renderEmptyState()}
-      {urls.length > 0 && <UrlList urls={liveUrls} onDelete={deleteUrl} lastPingMap={lastPingMap} />}
+      {urls.length > 0 && <UrlList urls={liveUrls} onDelete={deleteUrl} onEdit={editUrl} lastPingMap={lastPingMap} />}
 
       {error && urls.length > 0 && <Toast message={error} onDismiss={clearError} />}
     </PageLayout>

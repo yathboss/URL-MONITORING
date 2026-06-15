@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
 
 from ..database import get_connection
-from ..models import PingHistoryRead, URLCreate, URLDetail, URLRead
+from ..models import PingHistoryRead, URLCreate, URLDetail, URLRead, URLUpdate
 
 
 router = APIRouter()
@@ -117,6 +117,46 @@ async def get_url_detail(url_id: int) -> URLDetail:
             raise HTTPException(status_code=404, detail="URL not found")
 
         return URLDetail(**url.model_dump(), recent_pings=[])
+
+
+@router.put("/urls/{url_id}", response_model=URLRead)
+async def update_url(url_id: int, payload: URLUpdate) -> URLRead:
+    """Update a monitored URL."""
+    try:
+        async with get_connection() as conn:
+            # Check if exists
+            existing = await conn.fetchrow("SELECT * FROM urls WHERE id = $1", url_id)
+            if not existing:
+                raise HTTPException(status_code=404, detail="URL not found")
+            
+            new_web_address = str(payload.web_address) if payload.web_address else existing["web_address"]
+            new_name = payload.name if payload.name else existing["name"]
+
+            row = await conn.fetchrow(
+                """
+                UPDATE urls 
+                SET web_address = $1, name = $2
+                WHERE id = $3
+                RETURNING id, web_address, name, status, created_at
+                """,
+                new_web_address,
+                new_name,
+                url_id,
+            )
+            return URLRead(**dict(row))
+    except HTTPException:
+        raise
+    except Exception:
+        url = _mock_urls.get(url_id)
+        if not url:
+            raise HTTPException(status_code=404, detail="URL not found")
+            
+        if payload.name:
+            url.name = payload.name
+        if payload.web_address:
+            url.web_address = str(payload.web_address)
+            
+        return url
 
 
 @router.delete("/urls/{url_id}", status_code=status.HTTP_204_NO_CONTENT)

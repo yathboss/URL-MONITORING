@@ -8,6 +8,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
+  gap: 12px;
   transition: border-color 0.6s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -25,44 +26,74 @@
   border-left: 4px solid #F56565;
 }
 
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
 .name {
   font-weight: 600;
   font-size: 1.1rem;
   color: #111827;
+}
+
+.address {
+  font-size: 0.85rem;
+  color: #6B7280;
+  word-break: break-all;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.addressRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.label {
+  font-weight: 600;
+  color: #4B5563;
+}
+
+.footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.time {
+  font-size: 0.75rem;
+  color: #9CA3AF;
   margin-bottom: 4px;
 }
 
-.url {
-  font-size: 0.85rem;
-  color: #6B7280;
-  margin-bottom: 12px;
-  word-break: break-all;
-}
-
-.meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
-}
-
-.date {
-  font-size: 0.75rem;
-  color: #9CA3AF;
-}
-
-.deleteBtn {
+.actionBtn {
   background: transparent;
-  border: 1px solid rgba(245, 101, 101, 0.3);
-  color: #F56565;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  color: #4B5563;
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 0.75rem;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.deleteBtn:hover {
+.actionBtn:hover {
+  background-color: #F3F4F6;
+  color: #111827;
+}
+
+.deleteMode {
+  border-color: rgba(245, 101, 101, 0.3);
+  color: #F56565;
+}
+
+.deleteMode:hover {
   background-color: #F56565;
   color: #FFFFFF;
+  border-color: #F56565;
 }

@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { PingResult, URLItem } from '../../types';
 import { StatusDot } from '../ui/StatusDot';
 import { Badge } from '../ui/Badge';
+import { EditUrlModal } from './EditUrlModal';
 import styles from './UrlCard.module.css';
 
 interface UrlCardProps {
   url: URLItem;
   onDelete: (id: number) => void;
+  onEdit: (url: URLItem) => void;
   lastPing?: PingResult | null;
 }
 
@@ -19,8 +21,9 @@ function timeAgo(isoString: string): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
-export function UrlCard({ url, onDelete, lastPing }: UrlCardProps) {
+export function UrlCard({ url, onDelete, onEdit, lastPing }: UrlCardProps) {
   const [isConfirming, setIsConfirming] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [flashStatus, setFlashStatus] = useState<'UP' | 'DOWN' | null>(null);
   const previousStatus = useRef(url.status);
   const navigate = useNavigate();
@@ -73,10 +76,18 @@ export function UrlCard({ url, onDelete, lastPing }: UrlCardProps) {
         <div className={styles.name}>{url.name}</div>
         <StatusDot status={url.status} />
       </div>
+      
       <div className={styles.address}>
-        <div style={{ marginBottom: 8 }}>{url.web_address}</div>
-        <Badge variant={getBadgeVariant(url.status)} label={url.status} />
+        <div className={styles.addressRow}>
+          <span className={styles.label}>URL:</span>
+          <span>{url.web_address}</span>
+        </div>
+        <div className={styles.addressRow}>
+          <span className={styles.label}>Status:</span>
+          <Badge variant={getBadgeVariant(url.status)} label={url.status} />
+        </div>
       </div>
+      
       <div className={styles.footer}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div className={styles.time}>Added: {timeAgo(url.created_at)}</div>
@@ -88,20 +99,43 @@ export function UrlCard({ url, onDelete, lastPing }: UrlCardProps) {
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {isConfirming && (
-            <button 
-              className={styles.deleteBtn} 
-              style={{ border: 'none', background: 'transparent', color: '#666' }}
-              onClick={(e) => { e.stopPropagation(); setIsConfirming(false); }}
-            >
-              cancel
-            </button>
+          {isConfirming ? (
+            <>
+              <button 
+                className={styles.actionBtn} 
+                style={{ border: 'none', background: 'transparent', color: '#6B7280' }}
+                onClick={(e) => { e.stopPropagation(); setIsConfirming(false); }}
+              >
+                cancel
+              </button>
+              <button className={`${styles.actionBtn} ${styles.deleteMode}`} onClick={handleDeleteClick}>
+                Confirm?
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                className={styles.actionBtn} 
+                onClick={(e) => { e.stopPropagation(); setShowEditModal(true); }}
+              >
+                Edit
+              </button>
+              <button className={`${styles.actionBtn} ${styles.deleteMode}`} onClick={handleDeleteClick}>
+                Delete
+              </button>
+            </>
           )}
-          <button className={styles.deleteBtn} onClick={handleDeleteClick}>
-            {isConfirming ? 'Confirm?' : 'Delete'}
-          </button>
         </div>
       </div>
+      {showEditModal && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <EditUrlModal 
+            url={url} 
+            onClose={() => setShowEditModal(false)} 
+            onSuccess={(updated) => { setShowEditModal(false); onEdit(updated); }} 
+          />
+        </div>
+      )}
     </div>
   );
 }

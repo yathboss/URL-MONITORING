@@ -4,10 +4,11 @@ import { UrlCard } from './UrlCard';
 interface UrlListProps {
   urls: URLItem[];
   onDelete: (id: number) => void;
+  onEdit: (url: URLItem) => void;
   lastPingMap: Record<number, PingResult>;
 }
 
-export function UrlList({ urls, onDelete, lastPingMap }: UrlListProps) {
+export function UrlList({ urls, onDelete, onEdit, lastPingMap }: UrlListProps) {
   return (
     <div
       className="url-grid"
@@ -18,7 +19,7 @@ export function UrlList({ urls, onDelete, lastPingMap }: UrlListProps) {
       }}
     >
       {urls.map((url) => (
-        <UrlCard key={url.id} url={url} onDelete={onDelete} lastPing={lastPingMap[url.id] ?? null} />
+        <UrlCard key={url.id} url={url} onDelete={onDelete} onEdit={onEdit} lastPing={lastPingMap[url.id] ?? null} />
       ))}
     </div>
   );
