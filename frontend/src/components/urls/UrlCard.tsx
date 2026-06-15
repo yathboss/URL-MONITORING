@@ -21,6 +21,19 @@ function timeAgo(isoString: string): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
+function formatInterval(seconds: number): string {
+  if (seconds === 30) return '30s';
+  if (seconds === 60) return '1m';
+  if (seconds === 300) return '5m';
+  if (seconds === 1800) return '30m';
+  if (seconds === 3600) return '1h';
+  if (seconds === 21600) return '6h';
+  if (seconds === 43200) return '12h';
+  if (seconds === 86400) return '1d';
+  if (seconds === 259200) return '3d';
+  return `${seconds}s`;
+}
+
 export function UrlCard({ url, onDelete, onEdit, lastPing }: UrlCardProps) {
   const [isConfirming, setIsConfirming] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -90,7 +103,7 @@ export function UrlCard({ url, onDelete, onEdit, lastPing }: UrlCardProps) {
       
       <div className={styles.footer}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div className={styles.time}>Added: {timeAgo(url.created_at)}</div>
+          <div className={styles.time}>Added: {timeAgo(url.created_at)} &middot; Int: {formatInterval(url.ping_interval_seconds || 30)}</div>
           {lastPing && (
             <Badge
               variant={lastPing.status === 'UP' ? 'neutral' : 'danger'}

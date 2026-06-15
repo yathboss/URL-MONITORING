@@ -19,7 +19,7 @@ async def list_urls() -> list[URLRead]:
         async with get_connection() as conn:
             rows = await conn.fetch(
                 """
-                SELECT id, web_address, name, status, created_at
+                SELECT id, web_address, name, status, ping_interval_seconds, created_at
                 FROM urls
                 ORDER BY created_at DESC
                 """
@@ -50,12 +50,13 @@ async def create_url(payload: URLCreate) -> URLRead:
 
             row = await conn.fetchrow(
                 """
-                INSERT INTO urls (web_address, name, status, created_at)
-                VALUES ($1, $2, 'PENDING', NOW())
-                RETURNING id, web_address, name, status, created_at
+                INSERT INTO urls (web_address, name, ping_interval_seconds, status, created_at)
+                VALUES ($1, $2, $3, 'PENDING', NOW())
+                RETURNING id, web_address, name, ping_interval_seconds, status, created_at
                 """,
                 web_address,
                 payload.name,
+                payload.ping_interval_seconds,
             )
             return URLRead(**dict(row))
     except HTTPException:
@@ -76,6 +77,7 @@ async def create_url(payload: URLCreate) -> URLRead:
             web_address=web_address,
             name=payload.name,
             status="PENDING",
+            ping_interval_seconds=payload.ping_interval_seconds,
             created_at=datetime.now(),
         )
         _mock_urls[url_id] = new_url
@@ -88,7 +90,7 @@ async def get_url_detail(url_id: int) -> URLDetail:
     try:
         async with get_connection() as conn:
             row = await conn.fetchrow(
-                "SELECT id, web_address, name, status, created_at FROM urls WHERE id = $1",
+                "SELECT id, web_address, name, status, ping_interval_seconds, created_at FROM urls WHERE id = $1",
                 url_id,
             )
             if not row:
@@ -131,16 +133,18 @@ async def update_url(url_id: int, payload: URLUpdate) -> URLRead:
             
             new_web_address = str(payload.web_address) if payload.web_address else existing["web_address"]
             new_name = payload.name if payload.name else existing["name"]
+            new_interval = payload.ping_interval_seconds if payload.ping_interval_seconds is not None else existing.get("ping_interval_seconds", 30)
 
             row = await conn.fetchrow(
                 """
                 UPDATE urls 
-                SET web_address = $1, name = $2
-                WHERE id = $3
-                RETURNING id, web_address, name, status, created_at
+                SET web_address = $1, name = $2, ping_interval_seconds = $3
+                WHERE id = $4
+                RETURNING id, web_address, name, status, ping_interval_seconds, created_at
                 """,
                 new_web_address,
                 new_name,
+                new_interval,
                 url_id,
             )
             return URLRead(**dict(row))
@@ -155,6 +159,8 @@ async def update_url(url_id: int, payload: URLUpdate) -> URLRead:
             url.name = payload.name
         if payload.web_address:
             url.web_address = str(payload.web_address)
+        if payload.ping_interval_seconds is not None:
+            url.ping_interval_seconds = payload.ping_interval_seconds
             
         return url
 

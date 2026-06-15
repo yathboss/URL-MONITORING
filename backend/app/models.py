@@ -5,11 +5,13 @@ from pydantic import BaseModel, Field, HttpUrl
 class URLCreate(BaseModel):
     web_address: HttpUrl
     name: str = Field(..., min_length=1, max_length=100)
+    ping_interval_seconds: int = 30
 
 
 class URLUpdate(BaseModel):
     web_address: HttpUrl | None = None
     name: str | None = Field(None, min_length=1, max_length=100)
+    ping_interval_seconds: int | None = None
 
 
 class URLRead(BaseModel):
@@ -17,6 +19,7 @@ class URLRead(BaseModel):
     web_address: str
     name: str
     status: str = "PENDING"
+    ping_interval_seconds: int
     created_at: datetime
 
 

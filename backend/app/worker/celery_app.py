@@ -27,8 +27,8 @@ celery_app.config_from_object(
         "beat_schedule": {
             "schedule-all-pings": {
                 "task": "app.worker.tasks.schedule_ping_tasks",
-                "schedule": 30.0,
-                "options": {"expires": 25},
+                "schedule": 5.0,
+                "options": {"expires": 4},
             },
             "cleanup-old-pings": {
                 "task": "app.worker.tasks.cleanup_old_pings",

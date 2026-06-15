@@ -3,6 +3,7 @@ export interface URLItem {
   web_address: string;
   name: string;
   status: 'UP' | 'DOWN' | 'PENDING';
+  ping_interval_seconds: number;
   created_at: string;
 }
 
@@ -17,6 +18,7 @@ export interface PingResult {
 export interface AddURLPayload {
   web_address: string;
   name: string;
+  ping_interval_seconds: number;
 }
 
 export interface URLDetail extends URLItem {

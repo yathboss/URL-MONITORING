@@ -9,6 +9,7 @@ interface AddUrlFormProps {
 export function AddUrlForm({ onAdd, isLoading }: AddUrlFormProps) {
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
+  const [interval, setIntervalVal] = useState(30);
   const [touchedName, setTouchedName] = useState(false);
   const [touchedUrl, setTouchedUrl] = useState(false);
   const [wasAdded, setWasAdded] = useState(false);
@@ -38,7 +39,7 @@ export function AddUrlForm({ onAdd, isLoading }: AddUrlFormProps) {
     if (!name.trim() || name.length > 100 || !isValidUrl) return;
 
     try {
-      await onAdd({ name: name.trim(), web_address: url.trim() });
+      await onAdd({ name: name.trim(), web_address: url.trim(), ping_interval_seconds: interval });
     } catch {
       return;
     }
@@ -91,6 +92,34 @@ export function AddUrlForm({ onAdd, isLoading }: AddUrlFormProps) {
           placeholder="https://example.com"
         />
         {urlError && touchedUrl && <div className="field-error">{urlError}</div>}
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <label htmlFor="ping-interval">Ping interval</label>
+        <select
+          id="ping-interval"
+          value={interval}
+          onChange={(e) => setIntervalVal(Number(e.target.value))}
+          style={{
+            padding: '10px 14px',
+            borderRadius: 6,
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            backgroundColor: '#FCFCFC',
+            fontSize: '15px',
+            color: '#111827',
+            outline: 'none',
+          }}
+        >
+          <option value={30}>30 seconds</option>
+          <option value={60}>1 minute</option>
+          <option value={300}>5 minutes</option>
+          <option value={1800}>30 minutes</option>
+          <option value={3600}>1 hour</option>
+          <option value={21600}>6 hours</option>
+          <option value={43200}>12 hours</option>
+          <option value={86400}>1 day</option>
+          <option value={259200}>3 days</option>
+        </select>
       </div>
 
       <div style={{ marginTop: 24 }}>
