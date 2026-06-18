@@ -1,25 +1,33 @@
 # 🟢 Real-Time URL Uptime Monitor
 
-A highly responsive, real-time application designed to monitor the uptime and latency of critical web services and APIs. 
+A highly responsive, production-ready application designed to securely monitor the uptime, latency, and health of critical web services and APIs. 
 
-If a tracked website goes down or its response time spikes, the background workers instantly detect the failure and stream the status change directly to the React dashboard without requiring a page refresh.
+If a tracked website goes down or its response time spikes, background workers instantly detect the failure and stream the status change directly to the React dashboard via WebSockets without requiring a page refresh.
+
+## 🌟 Key Features
+
+*   **Multi-Tenant Authentication:** Secure JWT-based login allowing users to manage their own private fleet of monitors.
+*   **Advanced Health Checks:** Beyond simple HTTP pings, configure **SSL Expiry** tracking, **TTFB** (Time to First Byte) latency tracking, and **Keyword Search** inside HTML payloads.
+*   **Live Data Streaming:** Real-time dashboard updates via WebSockets for instant incident awareness.
+*   **Historical SLA Reporting:** Dynamically compute and visualize uptime percentages and latency sparklines across customizable time windows (24 hours, 7 days, 30 days, 90 days).
+*   **Incident Logging:** Persistent tracking of outages and degraded states for long-term reliability metrics.
 
 ## 🏗️ Technology Stack
 
 The project is built around a continuous, real-time data loop across 5 core technologies:
 
-*   **Frontend UI:** React, TypeScript, Vite, Recharts
-*   **REST API & WebSockets:** Python, FastAPI
+*   **Frontend UI:** React, TypeScript, Vite, Framer Motion, Recharts
+*   **REST API & WebSockets:** Python, FastAPI, JWT Authentication
 *   **Background Workers:** Celery (Beat Scheduler & Worker)
 *   **Message Broker:** Redis (Pub/Sub)
 *   **Database:** PostgreSQL (asyncpg)
 
 ## 📡 Architecture (How Data Flows)
 
-1. **React** sends a new URL to **FastAPI** on Port 8000.
-2. **FastAPI** saves the URL permanently in **PostgreSQL** on Port 5432.
-3. Every 30 seconds, **Celery Beat** queries the database and drops a ping instruction into **Redis** on Port 6379.
-4. The **Celery Worker** pulls the instruction from Redis, physically pings the target website via HTTP, records the latency, saves it back to PostgreSQL, and Publishes the final result to a Redis channel.
+1. **React** sends a new URL payload (with configured check types) to **FastAPI** on Port 8000.
+2. **FastAPI** saves the URL securely to the authenticated user in **PostgreSQL** on Port 5432.
+3. Every 30 seconds, **Celery Beat** queries the database and drops ping instructions into **Redis** on Port 6379.
+4. The **Celery Worker** pulls instructions from Redis, executes the multi-stage health checks (HTTP, SSL, TTFB, Keyword), records the metrics, saves them back to PostgreSQL (up to 2000 historic pings per URL), and Publishes the final result to a Redis channel.
 5. **FastAPI** listens to the Redis channel and instantly shoots the payload over a permanent **WebSocket** connection back to the **React** dashboard.
 
 ## 🚀 Local Setup Instructions
@@ -64,4 +72,4 @@ npm install
 npm run dev
 ```
 
-Navigate to `http://localhost:5173` to view the live dashboard!
+Navigate to `http://localhost:5173` to sign up, log in, and view the live dashboard!
