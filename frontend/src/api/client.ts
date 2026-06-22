@@ -1,5 +1,5 @@
 import axios, { AxiosRequestConfig } from 'axios';
-import { URLItem, AddURLPayload, URLDetail, UserRead } from '../types';
+import { URLItem, AddURLPayload, URLDetail, UserRead, Incident } from '../types';
 
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -180,4 +180,21 @@ export const getUrlExtraData = async (
 
 export const checkUrlNow = async (id: number): Promise<void> => {
   await client.post(`/api/v1/urls/${id}/check`, undefined, { timeout: 60000 });
+};
+
+export const getIncidents = async (status: 'open' | 'resolved' | 'all' = 'open'): Promise<Incident[]> => {
+  const response = await client.get<Incident[]>('/api/v1/incidents', { params: { status } });
+  return response.data;
+};
+
+export const acknowledgeIncident = async (id: number): Promise<Incident> => {
+  const response = await client.patch<Incident>(`/api/v1/incidents/${id}`, {
+    acknowledged_at: new Date().toISOString(),
+  });
+  return response.data;
+};
+
+export const addIncidentNote = async (id: number, note: string): Promise<Incident> => {
+  const response = await client.patch<Incident>(`/api/v1/incidents/${id}`, { note });
+  return response.data;
 };

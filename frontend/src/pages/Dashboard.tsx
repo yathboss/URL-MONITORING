@@ -15,9 +15,10 @@ import {
 } from '../components/ui/Skeleton';
 import { getUrlExtraData } from '../api/client';
 import { useUrls } from '../hooks/useUrls';
+import { useIncidents } from '../hooks/useIncidents';
 import { buildWsUrl, useWebSocket } from '../hooks/useWebSocket';
 import { useLiveStatus } from '../hooks/useLiveStatus';
-import { URLItem, URLStatus } from '../types';
+import { Incident, URLItem, URLStatus } from '../types';
 import { timeAgo } from '../utils/dates';
 
 export type OperationsView =
@@ -373,20 +374,47 @@ function FleetTable({ monitors, onInspect, onDeleteClick, uptimeWindow, setUptim
   );
 }
 
-function IncidentList({ incidents }: { incidents: FleetMonitor[] }) {
+function formatDuration(minutes: number | null): string {
+  if (minutes === null) return '';
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+function IncidentList({ incidents, onAcknowledge }: { incidents: Incident[]; onAcknowledge: (id: number) => void }) {
+  if (incidents.length === 0) {
+    return <p className="ops-empty">No open incidents — all monitors are healthy.</p>;
+  }
   return (
     <div className="ops-list">
       {incidents.map((incident, index) => (
         <article className="ops-incident-row" key={incident.id}>
           <div className="ops-incident-rank">{String(index + 1).padStart(2, '0')}</div>
-          <div>
+          <div style={{ flex: 1 }}>
             <div className="ops-row-title">
-              <strong>{incident.name}</strong>
-              <StatusPill status={incident.status} />
+              <strong>{incident.url_name}</strong>
+              <StatusPill status={incident.severity} />
+              {incident.acknowledged_at && (
+                <span className="ops-ack-badge" title={`Acknowledged ${timeAgo(incident.acknowledged_at)}`}>✓ Acked</span>
+              )}
             </div>
-            <p>{incident.incident_note ?? `${incident.status === 'DOWN' ? 'No successful response' : 'Warning threshold crossed'} on ${incident.region}.`}</p>
-            <small>Owner: {incident.owner} | Last checked {timeAgo(incident.last_checked_at)}</small>
+            <p>
+              {incident.check_type} check failed · started {timeAgo(incident.started_at)}
+              {incident.duration_minutes !== null && ` · ${formatDuration(incident.duration_minutes)} ongoing`}
+            </p>
+            <small>{incident.url_address}</small>
           </div>
+          {!incident.acknowledged_at && (
+            <button
+              type="button"
+              className="ops-ack-btn"
+              onClick={() => onAcknowledge(incident.id)}
+              title="Acknowledge this incident"
+            >
+              Ack
+            </button>
+          )}
         </article>
       ))}
     </div>
@@ -538,6 +566,7 @@ function ThinksysHome() {
 
 export function Dashboard({ view = 'home' }: DashboardProps) {
   const { urls, isLoading, error, addUrl, deleteUrl, retryFetch, clearError } = useUrls();
+  const { incidents, acknowledgeIncident } = useIncidents('open');
   const navigate = useNavigate();
   const [extraDataMap, setExtraDataMap] = useState<Record<number, Record<string, unknown>>>({});
   const [uptimeWindow, setUptimeWindow] = useState('90d');
@@ -614,11 +643,6 @@ export function Dashboard({ view = 'home' }: DashboardProps) {
     return { total, down, warn, active, avgUptime, avgLatency, p95 };
   }, [fleetMonitors]);
 
-  const incidents = useMemo(
-    () => fleetMonitors.filter((monitor) => monitor.status === 'DOWN' || monitor.status === 'WARN').slice(0, 6),
-    [fleetMonitors],
-  );
-
   const handleAddUrl = async (payload: Parameters<typeof addUrl>[0]) => {
     await addUrl(payload);
   };
@@ -670,9 +694,9 @@ export function Dashboard({ view = 'home' }: DashboardProps) {
             <p className="ops-kicker">Queue</p>
             <h3>Active incident timeline</h3>
           </div>
-          <Badge variant="warning" label={`${incidents.length} active`} />
+          <Badge variant={incidents.length ? 'warning' : 'neutral'} label={`${incidents.length} active`} />
         </div>
-        <IncidentList incidents={incidents} />
+        <IncidentList incidents={incidents} onAcknowledge={acknowledgeIncident} />
       </div>
       <div className="ops-panel">
         <div className="ops-panel-header">
