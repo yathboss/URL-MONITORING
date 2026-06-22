@@ -452,21 +452,21 @@ function ThinksysHome() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.48, delay: 0.1 }}
           >
-            ThinkSys digital command studio
+            Uptime Monitor Platform
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 26 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.62, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
           >
-            Welcome to ThinkSys
+            Welcome to Uptime Monitor
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.62, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
           >
-            We design, engineer, test, and operate premium digital products with the precision of a lab and the urgency of a launch team.
+            Monitor your websites, APIs, and infrastructure in real-time. Get instant alerts when your services go down and track latency worldwide.
           </motion.p>
           <motion.div
             className="thinksys-hero-actions"
@@ -474,7 +474,7 @@ function ThinksysHome() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.52, delay: 0.38 }}
           >
-            <a href="#thinksys-about">Explore our work</a>
+            <a href="#thinksys-about">Explore Features</a>
             <a href="#thinksys-contact">Contact us</a>
           </motion.div>
         </div>
@@ -509,8 +509,8 @@ function ThinksysHome() {
       >
         <div>
           <p className="thinksys-kicker">Contact us</p>
-          <h2>Let us build something precise together.</h2>
-          <p>Reach the team directly for product engineering, QA strategy, automation, platform modernization, and high-trust delivery partnerships.</p>
+          <h2>Need help with monitoring?</h2>
+          <p>Reach out to the team directly for support, feature requests, or help configuring your advanced integrations and alerts.</p>
         </div>
         <div className="thinksys-contact-card">
           <a href="mailto:singh.yatharth@thinksys.com">singh.yatharth@thinksys.com</a>
@@ -519,7 +519,7 @@ function ThinksysHome() {
       </motion.section>
 
       <footer className="thinksys-footer">
-        <span>&copy; ThinkSys. Crafted for modern digital operations.</span>
+        <span>&copy; Uptime Monitor. Crafted for modern infrastructure.</span>
         <nav aria-label="Company links">
           <a href="#privacy-policy">Privacy Policy</a>
           <a href="#terms-of-service">Terms of Service</a>
