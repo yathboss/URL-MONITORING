@@ -59,6 +59,20 @@ export interface PingHistoryRead {
   extra_data?: Record<string, unknown> | null;
 }
 
+export interface Incident {
+  id: number;
+  url_id: number;
+  url_name: string;
+  url_address: string;
+  started_at: string;
+  resolved_at: string | null;
+  check_type: string;
+  severity: 'DOWN' | 'WARN';
+  acknowledged_at: string | null;
+  note: string | null;
+  duration_minutes: number | null;
+}
+
 export interface UserRead {
   id: number;
   full_name: string;
