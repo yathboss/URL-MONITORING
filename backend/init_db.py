@@ -14,6 +14,18 @@ def migrate_url_uniqueness(cur):
     """)
 
 
+def migrate_incidents_columns(cur):
+    cur.execute("""
+        ALTER TABLE url_incidents
+          ADD COLUMN IF NOT EXISTS acknowledged_at TIMESTAMPTZ,
+          ADD COLUMN IF NOT EXISTS note TEXT
+    """)
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_url_incidents_open
+        ON url_incidents (url_id) WHERE resolved_at IS NULL
+    """)
+
+
 def migrate_monitor_columns(cur):
     cur.execute("""
         ALTER TABLE urls
@@ -96,7 +108,9 @@ def init_db():
         print("Ensuring URL uniqueness is scoped per user...")
         migrate_monitor_columns(cur)
         migrate_url_uniqueness(cur)
-        
+        print("Migrating incidents columns...")
+        migrate_incidents_columns(cur)
+
         print("Successfully initialized all database tables!")
         cur.close()
         conn.close()

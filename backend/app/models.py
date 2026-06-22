@@ -88,3 +88,22 @@ class URLExtraData(BaseModel):
     check_type: str
     extra_data: dict[str, Any]
     checked_at: datetime
+
+
+class IncidentRead(BaseModel):
+    id: int
+    url_id: int
+    url_name: str
+    url_address: str
+    started_at: datetime
+    resolved_at: datetime | None
+    check_type: str
+    severity: str
+    acknowledged_at: datetime | None
+    note: str | None
+    duration_minutes: int | None
+
+
+class IncidentUpdate(BaseModel):
+    acknowledged_at: datetime | None = None
+    note: str | None = None
