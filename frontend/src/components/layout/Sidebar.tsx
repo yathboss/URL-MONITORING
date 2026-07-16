@@ -14,6 +14,7 @@ const navGroups = [
       { to: '/dashboard', label: 'Home', icon: 'ti-home-2' },
       { to: '/monitors', label: 'Monitors', icon: 'ti-radar-2', countKey: 'urlCount' },
       { to: '/incidents', label: 'Incidents', icon: 'ti-alert-triangle', count: 3 },
+      { to: '/bug-reports', label: 'Bug Reports', icon: 'ti-bug' },
       { to: '/status-pages', label: 'Status Pages', icon: 'ti-world-share', adminOnly: true },
     ],
   },

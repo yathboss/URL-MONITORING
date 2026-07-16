@@ -45,6 +45,7 @@ function App() {
             <Route path="/maintenance" element={<ProtectedRoute><Dashboard view="maintenance" /></ProtectedRoute>} />
             <Route path="/alerts" element={<ProtectedRoute><Dashboard view="alerts" /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Dashboard view="reports" /></ProtectedRoute>} />
+            <Route path="/bug-reports" element={<ProtectedRoute><Dashboard view="bug-reports" /></ProtectedRoute>} />
             <Route path="/integrations" element={<ProtectedRoute><Dashboard view="integrations" /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Dashboard view="settings" /></ProtectedRoute>} />
             <Route path="/team" element={<ProtectedRoute><TeamPage /></ProtectedRoute>} />
