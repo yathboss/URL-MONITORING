@@ -5,6 +5,10 @@ import { createPortal } from 'react-dom';
 import modalStyles from '../components/urls/UrlCard.module.css';
 import { AddUrlModal } from '../components/urls/AddUrlModal';
 import { AlertsView } from '../components/alerts/AlertsView';
+import { ExecutiveReportPanel } from '../components/reports/ExecutiveReportPanel';
+import { BugReportsView } from '../components/bugs/BugReportsView';
+import { IntegrationsView } from '../components/integrations/IntegrationsView';
+import { AnalyticsHome } from '../components/home/AnalyticsHome';
 import { MaintenanceModal } from '../components/maintenance/MaintenanceModal';
 import { Toast } from '../components/ui/Toast';
 import { Badge } from '../components/ui/Badge';
@@ -31,6 +35,7 @@ export type OperationsView =
   | 'maintenance'
   | 'alerts'
   | 'reports'
+  | 'bug-reports'
   | 'integrations'
   | 'settings';
 
@@ -79,6 +84,11 @@ const viewCopy: Record<OperationsView, { kicker: string; title: string; descript
     title: 'Integrations',
     description: 'Connect the console to team workflows, incident tools, chat, and APIs.',
   },
+  'bug-reports': {
+    kicker: 'Quality signal',
+    title: 'Bug reports',
+    description: 'Flag anything broken in the system and follow what happens to it.',
+  },
   settings: {
     kicker: 'Workspace',
     title: 'Operational settings',
@@ -93,23 +103,8 @@ const statusMeta: Record<URLStatus, { label: string; color: string; bg: string }
   PENDING: { label: 'PENDING', color: '#6B7280', bg: '#F3F4F6' },
 };
 
-const integrations = [
-  ['Slack', 'Send monitor alerts and incident updates to channels.', 'Connected', 'ti-brand-slack'],
-  ['PagerDuty', 'Route critical incidents to on-call schedules.', 'Ready', 'ti-bell-ringing'],
-  ['Email', 'Notify subscribers and internal teams.', 'Connected', 'ti-mail'],
-  ['Webhook', 'Push status events into custom systems.', 'Ready', 'ti-webhook'],
-  ['Microsoft Teams', 'Notify delivery rooms during degraded states.', 'Available', 'ti-brand-teams'],
-  ['REST API', 'Automate monitors, exports, and status pages.', 'Available', 'ti-code'],
-];
 
 
-
-const reportCards = [
-  ['Executive uptime report', 'Fleet uptime, SLA, and major incidents', 'PDF export'],
-  ['Latency evidence pack', 'Average, P95, TTFB, and slow-region behavior', 'Charts'],
-  ['Incident review', 'Downtime minutes, error rate, owner, and timeline', 'Postmortem'],
-  ['Status-page summary', 'Subscriber-visible service health snapshot', 'Public view'],
-];
 
 interface FleetMonitor extends URLItem {
   latency_ms: number | null;
@@ -170,7 +165,7 @@ function toLiveFleetMonitor(url: URLItem, lastPingMap: Record<number, { latency_
     uptime_pct: estimateUptime(url.status, uptimeWindow),
     region: 'Primary region',
     owner: url.owner_email || 'You',
-    last_checked_at: lastPing?.checked_at ?? url.created_at,
+    last_checked_at: lastPing?.checked_at ?? url.last_pinged_at ?? url.created_at,
     next_check: formatInterval(url.ping_interval_seconds ?? url.check_interval_seconds),
     check_type: url.check_type ?? 'HTTP',
   };
@@ -202,40 +197,6 @@ function StatusPill({ status }: { status: URLStatus }) {
     </span>
   );
 }
-
-interface ThinksysAboutRow {
-  eyebrow: string;
-  title: string;
-  body: string;
-  image: string;
-  alt: string;
-  reverse?: boolean;
-}
-
-const thinksysAboutRows: ThinksysAboutRow[] = [
-  {
-    eyebrow: 'Mission',
-    title: 'We build dependable digital systems for teams that cannot afford uncertainty.',
-    body: 'ThinkSys helps companies turn complex engineering, QA, automation, and cloud operations into calm, measurable execution. Our mission is to make modern software feel faster, clearer, and more resilient from the first release to every scale moment after it.',
-    image: '/thinksys-tech-workspace.svg',
-    alt: 'AI generated modern technology workspace placeholder',
-  },
-  {
-    eyebrow: 'Innovation',
-    title: 'Future-ready infrastructure, thoughtful automation, and practical intelligence.',
-    body: 'We combine product engineering discipline with emerging tools, AI-assisted workflows, and observability-first thinking. The result is software that is not just shipped, but understood, improved, and trusted in real operating conditions.',
-    image: '/thinksys-server-room.svg',
-    alt: 'AI generated futuristic server room placeholder',
-    reverse: true,
-  },
-  {
-    eyebrow: 'Team',
-    title: 'A dedicated crew of engineers, designers, testers, and problem solvers.',
-    body: 'Behind every engagement is a team that cares about the details: performance, security, accessibility, maintainability, and the human experience around the product. We work as partners, not passengers.',
-    image: '/thinksys-team-lab.svg',
-    alt: 'AI generated collaborative technology team placeholder',
-  },
-];
 
 export function Favicon({ url, size = 16 }: { url: string; size?: number }) {
   const [error, setError] = useState(false);
@@ -420,149 +381,6 @@ function IncidentList({ incidents, onAcknowledge }: { incidents: Incident[]; onA
   );
 }
 
-function HomeParticles() {
-  return (
-    <div className="home-particles" aria-hidden="true">
-      {Array.from({ length: 14 }, (_, index) => (
-        <span key={index} className={`home-particle particle-${index + 1}`} />
-      ))}
-    </div>
-  );
-}
-
-function HeroOrb() {
-  return (
-    <div className="home-orb-stage" aria-hidden="true">
-      <div className="home-orb-glow" />
-      <div className="home-orb-ring ring-one" />
-      <div className="home-orb-ring ring-two" />
-      <div className="home-orb-ring ring-three" />
-      <div className="home-orb-core">
-        <span />
-      </div>
-      <div className="home-orb-dashboard dash-one" />
-      <div className="home-orb-dashboard dash-two" />
-      <div className="home-orb-dashboard dash-three" />
-    </div>
-  );
-}
-
-function AboutRow({ row, index }: { row: ThinksysAboutRow; index: number }) {
-  return (
-    <motion.article
-      className={`thinksys-about-row${row.reverse ? ' is-reverse' : ''}`}
-      initial={{ opacity: 0, y: 34 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.28 }}
-      transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <div className="thinksys-about-copy">
-        <span>{String(index + 1).padStart(2, '0')} / {row.eyebrow}</span>
-        <h3>{row.title}</h3>
-        <p>{row.body}</p>
-      </div>
-      <div className="thinksys-tilt-wrap">
-        <img src={row.image} alt={row.alt} loading="lazy" />
-      </div>
-    </motion.article>
-  );
-}
-
-function ThinksysHome() {
-  return (
-    <div className="thinksys-home">
-      <motion.section
-        className="thinksys-hero"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <HomeParticles />
-        <div className="thinksys-hero-copy">
-          <motion.p
-            className="thinksys-kicker"
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.48, delay: 0.1 }}
-          >
-            Uptime Monitor Platform
-          </motion.p>
-          <motion.h1
-            initial={{ opacity: 0, y: 26 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.62, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-          >
-            Welcome to Uptime Monitor
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.62, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          >
-            Monitor your websites, APIs, and infrastructure in real-time. Get instant alerts when your services go down and track latency worldwide.
-          </motion.p>
-          <motion.div
-            className="thinksys-hero-actions"
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.52, delay: 0.38 }}
-          >
-            <a href="#thinksys-about">Explore Features</a>
-            <a href="#thinksys-contact">Contact us</a>
-          </motion.div>
-        </div>
-        <HeroOrb />
-      </motion.section>
-
-      <section className="thinksys-about" id="thinksys-about">
-        <motion.div
-          className="thinksys-section-heading"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.36 }}
-          transition={{ duration: 0.56 }}
-        >
-          <p className="thinksys-kicker">About us</p>
-          <h2>Built for teams who expect craft, velocity, and reliability.</h2>
-        </motion.div>
-        <div className="thinksys-about-stack">
-          {thinksysAboutRows.map((row, index) => (
-            <AboutRow key={row.eyebrow} row={row} index={index} />
-          ))}
-        </div>
-      </section>
-
-      <motion.section
-        className="thinksys-contact"
-        id="thinksys-contact"
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.32 }}
-        transition={{ duration: 0.58, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <div>
-          <p className="thinksys-kicker">Contact us</p>
-          <h2>Need help with monitoring?</h2>
-          <p>Reach out to the team directly for support, feature requests, or help configuring your advanced integrations and alerts.</p>
-        </div>
-        <div className="thinksys-contact-card">
-          <a href="mailto:singh.yatharth@thinksys.com">singh.yatharth@thinksys.com</a>
-          <a href="mailto:yuvrajpathania836@gmail.com">yuvrajpathania836@gmail.com</a>
-        </div>
-      </motion.section>
-
-      <footer className="thinksys-footer">
-        <span>&copy; Uptime Monitor. Crafted for modern infrastructure.</span>
-        <nav aria-label="Company links">
-          <a href="#privacy-policy">Privacy Policy</a>
-          <a href="#terms-of-service">Terms of Service</a>
-          <a href="#company-guidelines">Company Guidelines</a>
-        </nav>
-      </footer>
-    </div>
-  );
-}
-
 export function Dashboard({ view = 'home' }: DashboardProps) {
   const { urls, isLoading, error, addUrl, deleteUrl, retryFetch, clearError } = useUrls();
   const { incidents, acknowledgeIncident } = useIncidents('open');
@@ -669,12 +487,19 @@ export function Dashboard({ view = 'home' }: DashboardProps) {
     </section>
   );
 
-  const renderHome = () => <ThinksysHome />;
+  const renderHome = () => (
+    <AnalyticsHome onAddMonitor={() => setIsAddModalOpen(true)} onInspect={handleInspectMonitor} />
+  );
 
   const renderMonitors = () => (
     <>
       <div className="ops-toolbar">
-        <button type="button" className="primary start-monitor-button" onClick={() => setIsAddModalOpen(true)}>
+        <button
+          type="button"
+          className="primary start-monitor-button"
+          onClick={() => setIsAddModalOpen(true)}
+          style={{ minHeight: 36, padding: '0 14px', fontSize: 13 }}
+        >
           <i className="ti ti-plus" aria-hidden="true" /> Add monitor
         </button>
         <button type="button" className="ops-ghost-button" onClick={retryFetch}>
@@ -823,26 +648,9 @@ export function Dashboard({ view = 'home' }: DashboardProps) {
   };
 
 
-  const renderReports = () => (
-    <div className="ops-panel">
-      <div className="ops-panel-header">
-        <div>
-          <p className="ops-kicker">Export center</p>
-          <h3>Stakeholder-ready report templates</h3>
-        </div>
-        <Badge variant="neutral" label="PDF / CSV roadmap" />
-      </div>
-      <SimpleRows rows={reportCards} />
-    </div>
-  );
+  const renderReports = () => <ExecutiveReportPanel />;
 
-  const renderIntegrations = () => (
-    <section className="ops-card-grid">
-      {integrations.map(([name, detail, status, icon]) => (
-        <OperationalCard key={name} icon={icon} title={name} value={status} detail={detail} />
-      ))}
-    </section>
-  );
+  const renderIntegrations = () => <IntegrationsView />;
 
   const renderSettings = () => (
     <section className="ops-split">
@@ -888,6 +696,7 @@ export function Dashboard({ view = 'home' }: DashboardProps) {
     if (view === 'maintenance') return <SinglePanelSkeleton rows={3} />;
     if (view === 'alerts') return <CardGridSkeleton count={4} />;
     if (view === 'reports') return <SinglePanelSkeleton rows={4} />;
+    if (view === 'bug-reports') return <SinglePanelSkeleton rows={4} />;
     if (view === 'integrations') return <CardGridSkeleton count={6} />;
     return <SplitPanelSkeleton />;
   };
@@ -901,6 +710,7 @@ export function Dashboard({ view = 'home' }: DashboardProps) {
     if (view === 'maintenance') return renderMaintenance();
     if (view === 'alerts') return renderAlerts();
     if (view === 'reports') return renderReports();
+    if (view === 'bug-reports') return <BugReportsView />;
     if (view === 'integrations') return renderIntegrations();
     return renderSettings();
   };
@@ -1037,35 +847,6 @@ export function Dashboard({ view = 'home' }: DashboardProps) {
         )}
       </div>
     </PageLayout>
-  );
-}
-
-function OperationalCard({ icon, title, value, detail }: { icon: string; title: string; value: string; detail: string }) {
-  return (
-    <motion.article className="ops-feature-card" whileHover={{ y: -4 }} transition={{ duration: 0.18 }}>
-      <div className="ops-feature-icon">
-        <i className={`ti ${icon}`} aria-hidden="true" />
-      </div>
-      <span>{title}</span>
-      <strong>{value}</strong>
-      <p>{detail}</p>
-    </motion.article>
-  );
-}
-
-function SimpleRows({ rows }: { rows: string[][] }) {
-  return (
-    <div className="ops-simple-rows">
-      {rows.map(([title, meta, detail]) => (
-        <article key={`${title}-${meta}`}>
-          <div>
-            <strong>{title}</strong>
-            <span>{detail}</span>
-          </div>
-          <Badge variant="neutral" label={meta} />
-        </article>
-      ))}
-    </div>
   );
 }
 

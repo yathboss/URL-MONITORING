@@ -91,7 +91,7 @@ async def list_urls(current_user: Annotated[UserRead, Depends(get_current_user)]
                 rows = await conn.fetch(
                     """
                     SELECT
-                        urls.id, urls.web_address, urls.name, urls.status, urls.created_at, urls.check_type, urls.keyword_to_find,
+                        urls.id, urls.web_address, urls.name, urls.status, urls.created_at, urls.last_pinged_at, urls.check_type, urls.keyword_to_find,
                         urls.check_interval_seconds, urls.ping_interval_seconds, users.email as owner_email, urls.is_public
                     FROM urls
                     LEFT JOIN users ON urls.user_id = users.id
@@ -102,7 +102,7 @@ async def list_urls(current_user: Annotated[UserRead, Depends(get_current_user)]
                 rows = await conn.fetch(
                     """
                     SELECT
-                        id, web_address, name, status, created_at, check_type, keyword_to_find,
+                        id, web_address, name, status, created_at, last_pinged_at, check_type, keyword_to_find,
                         check_interval_seconds, ping_interval_seconds, is_public
                     FROM urls WHERE user_id = $1
                     ORDER BY created_at DESC

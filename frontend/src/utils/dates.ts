@@ -1,4 +1,10 @@
 export function parseApiDate(value: string): Date {
+  // API timestamps without an explicit offset are UTC; parsing them bare would
+  // make the browser treat them as local time and shift everything by the
+  // viewer's UTC offset.
+  if (!/(Z|[+-]\d{2}:?\d{2})$/.test(value)) {
+    return new Date(value + 'Z');
+  }
   return new Date(value);
 }
 
