@@ -21,7 +21,10 @@ function maskDestination(channel: AlertChannel): string {
 }
 
 export function AlertChannelCard({ channel, isTesting, onTest, onToggle, onEdit, onDelete }: AlertChannelCardProps) {
-  const icon = channel.channel_type === 'EMAIL' ? 'ti-mail' : 'ti-webhook';
+  const icon =
+    channel.channel_type === 'EMAIL' ? 'ti-mail'
+    : channel.channel_type === 'SLACK' ? 'ti-brand-slack'
+    : 'ti-webhook';
 
   return (
     <div

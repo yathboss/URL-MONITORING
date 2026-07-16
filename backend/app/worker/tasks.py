@@ -261,7 +261,12 @@ def dispatch_alerts(url_id: int, event_type: str, incident_id: int | None = None
     event_type is one of DOWN | UP | TEST. Every attempt (success or failure) is
     logged to alert_deliveries so the UI can prove what was actually sent.
     """
-    from app.worker.notifications import build_alert_message, send_email, send_webhook
+    from app.worker.notifications import (
+        build_alert_message,
+        send_email,
+        send_slack,
+        send_webhook,
+    )
 
     conn = None
     sent = 0
@@ -289,10 +294,24 @@ def dispatch_alerts(url_id: int, event_type: str, incident_id: int | None = None
                 inc = cur.fetchone()
                 if inc:
                     severity, started_at = inc
+            elif event_type == "UP":
+                # Recovery alerts carry no incident id; report how long the
+                # just-resolved incident lasted.
+                cur.execute(
+                    """
+                    SELECT started_at, resolved_at FROM url_incidents
+                    WHERE url_id = %s AND resolved_at IS NOT NULL
+                    ORDER BY resolved_at DESC LIMIT 1
+                    """,
+                    (url_id,),
+                )
+                inc = cur.fetchone()
+                if inc and inc[0] and inc[1]:
+                    duration_min = max(0, int((inc[1] - inc[0]).total_seconds() // 60))
 
             cur.execute(
                 """
-                SELECT id, channel_type, destination
+                SELECT id, channel_type, destination, headers, http_method
                 FROM alert_channels
                 WHERE user_id = %s
                   AND is_enabled = true
@@ -317,12 +336,20 @@ def dispatch_alerts(url_id: int, event_type: str, incident_id: int | None = None
                 "timestamp": (started_at or datetime.utcnow()).isoformat(),
             }
 
-            for channel_id, channel_type, destination in channels:
+            for channel_id, channel_type, destination, headers, http_method in channels:
                 try:
                     if channel_type == "EMAIL":
                         send_email(destination, subject, text, html)
+                    elif channel_type == "SLACK":
+                        send_slack(
+                            destination, event_type, url_name, web_address,
+                            severity, started_at, duration_min,
+                        )
                     elif channel_type == "WEBHOOK":
-                        send_webhook(destination, text, payload)
+                        send_webhook(
+                            destination, text, payload,
+                            headers=headers or {}, method=http_method or "POST",
+                        )
                     else:
                         raise ValueError(f"Unknown channel type {channel_type}")
                     _record_delivery(

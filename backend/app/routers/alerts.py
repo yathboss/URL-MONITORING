@@ -1,3 +1,4 @@
+import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -17,7 +18,7 @@ router = APIRouter(tags=["alerts"])
 
 
 _CHANNEL_SELECT = """
-    SELECT c.id, c.channel_type, c.name, c.destination,
+    SELECT c.id, c.channel_type, c.name, c.destination, c.headers, c.http_method,
            c.notify_on_down, c.notify_on_recovery, c.is_enabled, c.created_at,
            d.status AS last_delivery_status, d.created_at AS last_delivery_at
     FROM alert_channels c
@@ -31,6 +32,14 @@ _CHANNEL_SELECT = """
 """
 
 
+def _channel_from_row(row) -> AlertChannelRead:
+    data = dict(row)
+    # asyncpg returns JSONB as a JSON string; the model wants a dict.
+    if isinstance(data.get("headers"), str):
+        data["headers"] = json.loads(data["headers"])
+    return AlertChannelRead(**data)
+
+
 @router.get("/alerts/channels", response_model=list[AlertChannelRead])
 async def list_channels(
     current_user: Annotated[UserRead, Depends(get_current_user)],
@@ -40,7 +49,7 @@ async def list_channels(
             _CHANNEL_SELECT + " WHERE c.user_id = $1 ORDER BY c.created_at DESC",
             current_user.id,
         )
-    return [AlertChannelRead(**dict(row)) for row in rows]
+    return [_channel_from_row(row) for row in rows]
 
 
 @router.post("/alerts/channels", response_model=AlertChannelRead, status_code=status.HTTP_201_CREATED)
@@ -52,19 +61,21 @@ async def create_channel(
         row = await conn.fetchrow(
             """
             INSERT INTO alert_channels
-                (user_id, channel_type, name, destination, notify_on_down, notify_on_recovery)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id, channel_type, name, destination,
+                (user_id, channel_type, name, destination, headers, http_method, notify_on_down, notify_on_recovery)
+            VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8)
+            RETURNING id, channel_type, name, destination, headers, http_method,
                       notify_on_down, notify_on_recovery, is_enabled, created_at
             """,
             current_user.id,
             payload.channel_type,
             payload.name,
             payload.destination,
+            json.dumps(payload.headers),
+            payload.http_method,
             payload.notify_on_down,
             payload.notify_on_recovery,
         )
-    return AlertChannelRead(**dict(row))
+    return _channel_from_row(row)
 
 
 @router.patch("/alerts/channels/{channel_id}", response_model=AlertChannelRead)
@@ -79,15 +90,19 @@ async def update_channel(
             UPDATE alert_channels
             SET name               = COALESCE($1, name),
                 destination        = COALESCE($2, destination),
-                notify_on_down     = COALESCE($3, notify_on_down),
-                notify_on_recovery = COALESCE($4, notify_on_recovery),
-                is_enabled         = COALESCE($5, is_enabled)
-            WHERE id = $6 AND user_id = $7
-            RETURNING id, channel_type, name, destination,
+                headers            = COALESCE($3::jsonb, headers),
+                http_method        = COALESCE($4, http_method),
+                notify_on_down     = COALESCE($5, notify_on_down),
+                notify_on_recovery = COALESCE($6, notify_on_recovery),
+                is_enabled         = COALESCE($7, is_enabled)
+            WHERE id = $8 AND user_id = $9
+            RETURNING id, channel_type, name, destination, headers, http_method,
                       notify_on_down, notify_on_recovery, is_enabled, created_at
             """,
             payload.name,
             payload.destination,
+            None if payload.headers is None else json.dumps(payload.headers),
+            payload.http_method,
             payload.notify_on_down,
             payload.notify_on_recovery,
             payload.is_enabled,
@@ -96,7 +111,7 @@ async def update_channel(
         )
     if not row:
         raise HTTPException(status_code=404, detail="Alert channel not found")
-    return AlertChannelRead(**dict(row))
+    return _channel_from_row(row)
 
 
 @router.delete("/alerts/channels/{channel_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -120,12 +135,12 @@ async def test_channel(
     current_user: Annotated[UserRead, Depends(get_current_user)],
 ) -> AlertDeliveryRead:
     """Send a test notification immediately and return the real result."""
-    from ..worker.notifications import build_alert_message, send_email, send_webhook
+    from ..worker.notifications import build_alert_message, send_email, send_slack, send_webhook
 
     async with get_connection() as conn:
         channel = await conn.fetchrow(
             """
-            SELECT id, channel_type, name, destination
+            SELECT id, channel_type, name, destination, headers, http_method
             FROM alert_channels
             WHERE id = $1 AND user_id = $2
             """,
@@ -135,6 +150,10 @@ async def test_channel(
         if not channel:
             raise HTTPException(status_code=404, detail="Alert channel not found")
 
+        headers = channel["headers"]
+        if isinstance(headers, str):
+            headers = json.loads(headers)
+
         subject, text, html = build_alert_message(
             "TEST", channel["name"], channel["destination"]
         )
@@ -143,9 +162,17 @@ async def test_channel(
         try:
             if channel["channel_type"] == "EMAIL":
                 await run_in_threadpool(send_email, channel["destination"], subject, text, html)
-            else:
+            elif channel["channel_type"] == "SLACK":
+                await run_in_threadpool(
+                    send_slack, channel["destination"], "TEST",
+                    channel["name"], channel["destination"],
+                )
+            else:  # WEBHOOK
                 payload = {"event": "TEST", "channel": channel["name"]}
-                await run_in_threadpool(send_webhook, channel["destination"], text, payload)
+                await run_in_threadpool(
+                    send_webhook, channel["destination"], text, payload, headers or {},
+                    channel["http_method"] or "POST",
+                )
         except Exception as exc:  # noqa: BLE001 - record the real failure for the user
             send_status = "FAILED"
             error = str(exc)[:500]

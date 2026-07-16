@@ -78,6 +78,26 @@ def migrate_scheduling_columns(cur):
     cur.execute("""
         CREATE INDEX IF NOT EXISTS idx_urls_next_check_at ON urls (next_check_at)
     """)
+    # Audit column: stamped automatically by a trigger on every UPDATE so all
+    # code paths (worker + API) are covered without touching their queries.
+    cur.execute("""
+        ALTER TABLE urls
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    """)
+    cur.execute("""
+        CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
+        BEGIN
+            NEW.updated_at = now();
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql
+    """)
+    cur.execute("DROP TRIGGER IF EXISTS urls_set_updated_at ON urls")
+    cur.execute("""
+        CREATE TRIGGER urls_set_updated_at
+        BEFORE UPDATE ON urls
+        FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+    """)
 
 
 def migrate_alerts_tables(cur):
@@ -89,6 +109,8 @@ def migrate_alerts_tables(cur):
           channel_type VARCHAR(20) NOT NULL,
           name VARCHAR(100) NOT NULL,
           destination TEXT NOT NULL,
+          headers JSONB NOT NULL DEFAULT '{}',
+          http_method VARCHAR(10) NOT NULL DEFAULT 'POST',
           notify_on_down BOOLEAN NOT NULL DEFAULT true,
           notify_on_recovery BOOLEAN NOT NULL DEFAULT true,
           is_enabled BOOLEAN NOT NULL DEFAULT true,
@@ -110,6 +132,57 @@ def migrate_alerts_tables(cur):
     cur.execute("""
         CREATE INDEX IF NOT EXISTS idx_alert_deliveries_channel
         ON alert_deliveries (channel_id, created_at DESC)
+    """)
+    # Custom HTTP headers (key/value) sent with webhook deliveries.
+    cur.execute("""
+        ALTER TABLE alert_channels
+        ADD COLUMN IF NOT EXISTS headers JSONB NOT NULL DEFAULT '{}'
+    """)
+    # HTTP request method used for webhook deliveries (POST/GET/PUT/PATCH).
+    cur.execute("""
+        ALTER TABLE alert_channels
+        ADD COLUMN IF NOT EXISTS http_method VARCHAR(10) NOT NULL DEFAULT 'POST'
+    """)
+
+
+def migrate_ping_history_index(cur):
+    """Composite index for per-monitor time-series queries (detail page,
+    executive report, analytics overview heartbeats)."""
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_ping_history_url_checked_at
+        ON ping_history (url_id, checked_at DESC)
+    """)
+
+
+def migrate_bug_reports_table(cur):
+    """User-submitted bug reports with admin triage workflow."""
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS bug_reports (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          title VARCHAR(200) NOT NULL,
+          description TEXT NOT NULL,
+          severity VARCHAR(10) NOT NULL DEFAULT 'MEDIUM',
+          area VARCHAR(50),
+          status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
+          created_at TIMESTAMPTZ DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_bug_reports_status
+        ON bug_reports (status, created_at DESC)
+    """)
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_bug_reports_user
+        ON bug_reports (user_id)
+    """)
+    # Reuses the set_updated_at() trigger function created for urls.
+    cur.execute("DROP TRIGGER IF EXISTS bug_reports_set_updated_at ON bug_reports")
+    cur.execute("""
+        CREATE TRIGGER bug_reports_set_updated_at
+        BEFORE UPDATE ON bug_reports
+        FOR EACH ROW EXECUTE FUNCTION set_updated_at()
     """)
 
 
@@ -229,6 +302,12 @@ def init_db():
 
         print("Creating alert tables...")
         migrate_alerts_tables(cur)
+
+        print("Creating bug reports table...")
+        migrate_bug_reports_table(cur)
+
+        print("Indexing ping history...")
+        migrate_ping_history_index(cur)
 
         print("Seeding admin accounts...")
         seed_admin_accounts(cur)

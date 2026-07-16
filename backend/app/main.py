@@ -15,6 +15,9 @@ from .routers import users as users_router
 from .routers import incidents as incidents_router
 from .routers import alerts as alerts_router
 from .routers import metrics as metrics_router
+from .routers import reports as reports_router
+from .routers import bugs as bugs_router
+from .routers import analytics as analytics_router
 from .routers import public as public_router
 from .routers import maintenance as maintenance_router
 from app.redis_listener import redis_listener
@@ -62,7 +65,13 @@ app = FastAPI(title="Uptime Monitor API", version="0.1.0", lifespan=lifespan, de
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        # Expo web preview of the mobile app (native app is not CORS-bound)
+        "http://localhost:8081",
+        "http://127.0.0.1:8081",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -80,6 +89,9 @@ app.include_router(users_router.router, prefix="/api/v1")
 app.include_router(incidents_router.router, prefix="/api/v1")
 app.include_router(alerts_router.router, prefix="/api/v1")
 app.include_router(metrics_router.router, prefix="/api/v1")
+app.include_router(reports_router.router, prefix="/api/v1")
+app.include_router(bugs_router.router, prefix="/api/v1")
+app.include_router(analytics_router.router, prefix="/api/v1")
 app.include_router(maintenance_router.router, prefix="/api/v1")
 app.include_router(public_router.router, prefix="/api/v1/public")
 app.include_router(ws_router)

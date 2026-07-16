@@ -1,5 +1,5 @@
 import axios, { AxiosRequestConfig } from 'axios';
-import { URLItem, AddURLPayload, URLDetail, UserRead, AdminUserOverview, UserUpdate, Incident, AlertChannel, AlertChannelPayload, AlertChannelUpdate, AlertDelivery, PublicStatus, MaintenanceWindow } from '../types';
+import { URLItem, AddURLPayload, URLDetail, UserRead, AdminUserOverview, UserUpdate, Incident, AlertChannel, AlertChannelPayload, AlertChannelUpdate, AlertDelivery, PublicStatus, MaintenanceWindow, ExecutiveReport, ReportRange, BugReport, BugReportPayload, BugStatus, AnalyticsOverview } from '../types';
 
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -259,4 +259,33 @@ export const getMaintenanceWindows = async (): Promise<MaintenanceWindow[]> => {
 
 export const deleteMaintenanceWindow = async (id: number): Promise<void> => {
   await client.delete(`/api/v1/maintenance/${id}`);
+};
+
+export const getExecutiveReport = async (range: ReportRange): Promise<ExecutiveReport> => {
+  const response = await client.get<ExecutiveReport>('/api/v1/reports/executive', { params: { range } });
+  return response.data;
+};
+
+export const getAnalyticsOverview = async (range: ReportRange): Promise<AnalyticsOverview> => {
+  const response = await client.get<AnalyticsOverview>('/api/v1/analytics/overview', { params: { range } });
+  return response.data;
+};
+
+export const submitBugReport = async (payload: BugReportPayload): Promise<BugReport> => {
+  const response = await client.post<BugReport>('/api/v1/bugs', payload);
+  return response.data;
+};
+
+export const getBugReports = async (): Promise<BugReport[]> => {
+  const response = await client.get<BugReport[]>('/api/v1/bugs');
+  return response.data;
+};
+
+export const updateBugReport = async (id: number, status: BugStatus): Promise<BugReport> => {
+  const response = await client.patch<BugReport>(`/api/v1/bugs/${id}`, { status });
+  return response.data;
+};
+
+export const deleteBugReport = async (id: number): Promise<void> => {
+  await client.delete(`/api/v1/bugs/${id}`);
 };

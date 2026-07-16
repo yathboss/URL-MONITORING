@@ -35,7 +35,7 @@ export function useAlertChannels() {
   useEffect(() => {
     let mounted = true;
     setIsLoading(true);
-    (async () => {
+    const load = async () => {
       try {
         const [channelData, deliveryData] = await Promise.all([
           getAlertChannels(),
@@ -51,9 +51,19 @@ export function useAlertChannels() {
       } finally {
         if (mounted) setIsLoading(false);
       }
-    })();
+    };
+    void load();
+
+    // Stay fresh without manual refreshes: resync when the tab regains focus
+    // and on a slow poll, so channels created elsewhere (another tab, the API)
+    // show up on their own.
+    const onFocus = () => void load();
+    window.addEventListener('focus', onFocus);
+    const interval = window.setInterval(load, 30000);
     return () => {
       mounted = false;
+      window.removeEventListener('focus', onFocus);
+      window.clearInterval(interval);
     };
   }, []);
 

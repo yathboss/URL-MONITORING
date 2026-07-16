@@ -58,6 +58,7 @@ class URLRead(BaseModel):
     name: str
     status: str = "PENDING"
     created_at: datetime
+    last_pinged_at: datetime | None = None
     check_type: str = "HTTP"
     keyword_to_find: str | None = None
     check_interval_seconds: int = 30
@@ -123,10 +124,30 @@ class IncidentUpdate(BaseModel):
     note: str | None = None
 
 
+def _clean_webhook_headers(headers: dict[str, str] | None) -> dict[str, str] | None:
+    """Strip blanks and reject header names/values that would break the HTTP request."""
+    if headers is None:
+        return None
+    cleaned: dict[str, str] = {}
+    for key, value in headers.items():
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            continue
+        if any(c in key for c in " \r\n:") or "\r" in value or "\n" in value:
+            raise ValueError(f"invalid header name or value: {key!r}")
+        cleaned[key] = value
+    if len(cleaned) > 20:
+        raise ValueError("too many custom headers (max 20)")
+    return cleaned
+
+
 class AlertChannelCreate(BaseModel):
-    channel_type: str = Field(..., pattern="^(EMAIL|WEBHOOK)$")
+    channel_type: str = Field(..., pattern="^(EMAIL|WEBHOOK|SLACK)$")
     name: str = Field(..., min_length=1, max_length=100)
     destination: str = Field(..., min_length=1)
+    headers: dict[str, str] = Field(default_factory=dict)
+    http_method: str = Field("POST", pattern="^(POST|GET|PUT|PATCH)$")
     notify_on_down: bool = True
     notify_on_recovery: bool = True
 
@@ -136,19 +157,35 @@ class AlertChannelCreate(BaseModel):
         if self.channel_type == "EMAIL":
             if "@" not in dest or "." not in dest.split("@")[-1]:
                 raise ValueError("destination must be a valid email address")
+        elif self.channel_type == "SLACK":
+            if not dest.startswith("https://") or "hooks.slack.com" not in dest.lower():
+                raise ValueError(
+                    "destination must be a Slack incoming webhook URL (https://hooks.slack.com/...)"
+                )
+            # Slack webhooks authenticate via the URL itself and always take POST.
+            self.headers = {}
+            self.http_method = "POST"
         elif self.channel_type == "WEBHOOK":
             if not (dest.startswith("http://") or dest.startswith("https://")):
                 raise ValueError("destination must be an http(s) webhook URL")
         self.destination = dest
+        self.headers = _clean_webhook_headers(self.headers) or {}
         return self
 
 
 class AlertChannelUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=100)
     destination: str | None = Field(None, min_length=1)
+    headers: dict[str, str] | None = None
+    http_method: str | None = Field(None, pattern="^(POST|GET|PUT|PATCH)$")
     notify_on_down: bool | None = None
     notify_on_recovery: bool | None = None
     is_enabled: bool | None = None
+
+    @model_validator(mode="after")
+    def validate_headers(self) -> "AlertChannelUpdate":
+        self.headers = _clean_webhook_headers(self.headers)
+        return self
 
 
 class AlertChannelRead(BaseModel):
@@ -156,6 +193,8 @@ class AlertChannelRead(BaseModel):
     channel_type: str
     name: str
     destination: str
+    headers: dict[str, str] = Field(default_factory=dict)
+    http_method: str = "POST"
     notify_on_down: bool
     notify_on_recovery: bool
     is_enabled: bool
@@ -218,3 +257,86 @@ class MonitorMetrics(BaseModel):
     incident_count: int
     total_downtime_minutes: int
     current_status: str
+
+
+class BugReportCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = Field(..., min_length=1, max_length=5000)
+    severity: str = Field("MEDIUM", pattern="^(LOW|MEDIUM|HIGH)$")
+    area: str | None = Field(None, max_length=50)
+
+
+class BugReportUpdate(BaseModel):
+    status: str = Field(..., pattern="^(OPEN|IN_PROGRESS|RESOLVED)$")
+
+
+class BugReportRead(BaseModel):
+    id: int
+    title: str
+    description: str
+    severity: str
+    area: str | None
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    reporter_name: str | None = None
+    reporter_email: str | None = None
+
+
+class ExecutiveReportMonitor(BaseModel):
+    monitor_id: int
+    name: str
+    web_address: str
+    uptime_pct: float
+    error_rate_pct: float
+    avg_response_time_ms: float | None
+    incident_count: int
+    total_downtime_minutes: int
+    current_status: str
+    total_pings: int
+
+
+class ExecutiveReportWorstPerformer(BaseModel):
+    monitor_id: int
+    name: str
+    uptime_pct: float
+    total_downtime_minutes: int
+
+
+class ExecutiveReportSummary(BaseModel):
+    overall_uptime_pct: float
+    avg_response_time_ms: float | None
+    total_incidents: int
+    total_downtime_minutes: int
+    monitor_count: int
+    worst_performer: ExecutiveReportWorstPerformer | None = None
+
+
+class ExecutiveReport(BaseModel):
+    range: str
+    generated_at: datetime
+    period_start: datetime
+    period_end: datetime
+    summary: ExecutiveReportSummary
+    monitors: list[ExecutiveReportMonitor]
+
+
+class AnalyticsBucket(BaseModel):
+    t: datetime
+    total: int
+    up: int
+    avg_ms: float | None
+
+
+class AnalyticsOverviewMonitor(ExecutiveReportMonitor):
+    buckets: list[AnalyticsBucket]
+
+
+class AnalyticsOverview(BaseModel):
+    range: str
+    generated_at: datetime
+    period_start: datetime
+    period_end: datetime
+    bucket_minutes: int
+    summary: ExecutiveReportSummary
+    monitors: list[AnalyticsOverviewMonitor]

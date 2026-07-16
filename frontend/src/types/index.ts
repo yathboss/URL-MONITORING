@@ -8,6 +8,7 @@ export interface URLItem {
   name: string;
   status: 'PENDING' | 'UP' | 'DOWN' | 'WARN';
   created_at: string;
+  last_pinged_at?: string | null;
   check_type?: CheckType | null;
   keyword_to_find?: string | null;
   check_interval_seconds: number;
@@ -82,13 +83,100 @@ export interface UserRead {
   created_at: string;
 }
 
-export type AlertChannelType = 'EMAIL' | 'WEBHOOK';
+export type AlertChannelType = 'EMAIL' | 'WEBHOOK' | 'SLACK';
+export type WebhookMethod = 'POST' | 'GET' | 'PUT' | 'PATCH';
+
+export type ReportRange = '24h' | '7d' | '30d' | '90d';
+
+export type BugSeverity = 'LOW' | 'MEDIUM' | 'HIGH';
+export type BugStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+
+export interface BugReport {
+  id: number;
+  title: string;
+  description: string;
+  severity: BugSeverity;
+  area: string | null;
+  status: BugStatus;
+  created_at: string;
+  updated_at: string;
+  reporter_name: string | null;
+  reporter_email: string | null;
+}
+
+export interface BugReportPayload {
+  title: string;
+  description: string;
+  severity: BugSeverity;
+  area?: string | null;
+}
+
+export interface ExecutiveReportMonitor {
+  monitor_id: number;
+  name: string;
+  web_address: string;
+  uptime_pct: number;
+  error_rate_pct: number;
+  avg_response_time_ms: number | null;
+  incident_count: number;
+  total_downtime_minutes: number;
+  current_status: string;
+  total_pings: number;
+}
+
+export interface ExecutiveReportWorstPerformer {
+  monitor_id: number;
+  name: string;
+  uptime_pct: number;
+  total_downtime_minutes: number;
+}
+
+export interface ExecutiveReportSummary {
+  overall_uptime_pct: number;
+  avg_response_time_ms: number | null;
+  total_incidents: number;
+  total_downtime_minutes: number;
+  monitor_count: number;
+  worst_performer: ExecutiveReportWorstPerformer | null;
+}
+
+export interface ExecutiveReport {
+  range: ReportRange;
+  generated_at: string;
+  period_start: string;
+  period_end: string;
+  summary: ExecutiveReportSummary;
+  monitors: ExecutiveReportMonitor[];
+}
+
+export interface AnalyticsBucket {
+  t: string;
+  total: number;
+  up: number;
+  avg_ms: number | null;
+}
+
+export interface AnalyticsOverviewMonitor extends ExecutiveReportMonitor {
+  buckets: AnalyticsBucket[];
+}
+
+export interface AnalyticsOverview {
+  range: ReportRange;
+  generated_at: string;
+  period_start: string;
+  period_end: string;
+  bucket_minutes: number;
+  summary: ExecutiveReportSummary;
+  monitors: AnalyticsOverviewMonitor[];
+}
 
 export interface AlertChannel {
   id: number;
   channel_type: AlertChannelType;
   name: string;
   destination: string;
+  headers: Record<string, string>;
+  http_method: WebhookMethod;
   notify_on_down: boolean;
   notify_on_recovery: boolean;
   is_enabled: boolean;
@@ -101,6 +189,8 @@ export interface AlertChannelPayload {
   channel_type: AlertChannelType;
   name: string;
   destination: string;
+  headers: Record<string, string>;
+  http_method: WebhookMethod;
   notify_on_down: boolean;
   notify_on_recovery: boolean;
 }
@@ -108,6 +198,8 @@ export interface AlertChannelPayload {
 export interface AlertChannelUpdate {
   name?: string;
   destination?: string;
+  headers?: Record<string, string>;
+  http_method?: WebhookMethod;
   notify_on_down?: boolean;
   notify_on_recovery?: boolean;
   is_enabled?: boolean;
