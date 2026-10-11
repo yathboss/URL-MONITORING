@@ -4,12 +4,6 @@
 # If Render appends a suffix to a service URL (name already taken), update
 # CORS_ORIGINS / VITE_API_BASE_URL below to the real URLs and redeploy.
 
-databases:
-  - name: urlmon-db
-    plan: free
-    databaseName: uptime_monitor
-    user: uptime
-
 services:
   - type: keyvalue
     name: urlmon-redis
@@ -25,10 +19,10 @@ services:
     dockerCommand: sh start-render.sh
     healthCheckPath: /healthz
     envVars:
+      # Free Neon Postgres (Render's free Postgres expires after 30 days).
+      # Set the Neon direct (non-pooled) URL in the Render dashboard.
       - key: DATABASE_URL
-        fromDatabase:
-          name: urlmon-db
-          property: connectionString
+        sync: false
       - key: REDIS_URL
         fromService:
           type: keyvalue
@@ -44,6 +38,17 @@ services:
         value: https://urlmon-yathboss.onrender.com
       - key: CELERY_CONCURRENCY
         value: "20"
+      # Gmail SMTP for alert emails; values are set in the Render dashboard.
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
 
   - type: web
     name: urlmon-yathboss
