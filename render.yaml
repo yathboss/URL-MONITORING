@@ -44,6 +44,11 @@ services:
         value: Admin@2026
       - key: PING_RETENTION_DAYS
         value: "14"
+      # Free instance has 0.1 CPU, so measured TTFB runs high.
+      - key: TTFB_WARN_MS
+        value: "3000"
+      - key: TTFB_DOWN_MS
+        value: "10000"
       # Gmail SMTP for alert emails; values are set in the Render dashboard.
       - key: SMTP_HOST
         value: smtp.gmail.com

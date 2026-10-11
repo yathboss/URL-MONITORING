@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     # Shared admin login shown on the sign-in page (see app/public_workspace.py).
     admin_login_email: str = "admin@uptimemonitor.dev"
     ping_retention_days: int = 30
+    # TTFB thresholds: below warn -> UP, below down -> WARN, else DOWN.
+    ttfb_warn_ms: int = 800
+    ttfb_down_ms: int = 3000
 
     # Email (SMTP) settings for alert notifications. Optional: the app boots
     # without them; alert delivery simply reports "SMTP not configured".

@@ -3,6 +3,8 @@ from datetime import datetime
 
 import httpx
 
+from app.config import settings
+
 from .base import CheckResult
 
 
@@ -28,9 +30,9 @@ def run_ttfb_check(url_id: int, web_address: str) -> CheckResult:
                     ttfb_ms = int((time.monotonic() - start) * 1000)
         total_ms = int((time.monotonic() - start) * 1000)
 
-        if ttfb_ms < 800:
+        if ttfb_ms < settings.ttfb_warn_ms:
             status = "UP"
-        elif ttfb_ms < 3000:
+        elif ttfb_ms < settings.ttfb_down_ms:
             status = "WARN"
         else:
             status = "DOWN"
