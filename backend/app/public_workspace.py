@@ -50,15 +50,17 @@ MONITORS = [
 ]
 
 
-def upsert_monitor(cur, user_id: int, monitor: SeedMonitor) -> int:
+def upsert_monitor(cur, user_id: int, monitor: SeedMonitor, start_offset_seconds: int = 0) -> int:
+    # New rows get a staggered first check so the monitors don't all run in
+    # the same instant on a small instance (which would skew TTFB readings).
     cur.execute(
         """
         INSERT INTO urls
             (
                 user_id, web_address, name, status, created_at, check_type,
-                check_interval_seconds, ping_interval_seconds
+                check_interval_seconds, ping_interval_seconds, next_check_at
             )
-        VALUES (%s, %s, %s, 'PENDING', NOW(), %s, %s, %s)
+        VALUES (%s, %s, %s, 'PENDING', NOW(), %s, %s, %s, NOW() + make_interval(secs => %s))
         ON CONFLICT (user_id, web_address)
         DO UPDATE SET
             name = EXCLUDED.name,
@@ -74,6 +76,7 @@ def upsert_monitor(cur, user_id: int, monitor: SeedMonitor) -> int:
             CHECK_TYPE,
             monitor.interval_seconds,
             monitor.interval_seconds,
+            start_offset_seconds,
         ),
     )
     return int(cur.fetchone()[0])
@@ -100,6 +103,7 @@ def upsert_admin_login(cur) -> int:
 def seed_public_workspace(cur) -> int:
     """Upsert the admin login and its monitors. Returns the monitor count."""
     user_id = upsert_admin_login(cur)
-    for monitor in MONITORS:
-        upsert_monitor(cur, user_id, monitor)
+    for index, monitor in enumerate(MONITORS):
+        offset = index * monitor.interval_seconds // len(MONITORS)
+        upsert_monitor(cur, user_id, monitor, offset)
     return len(MONITORS)
