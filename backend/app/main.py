@@ -86,7 +86,7 @@ async def healthz() -> dict:
 
 app.include_router(auth_router.router)
 app.include_router(urls_router.router, prefix="/api/v1")
-app.include_router(users_router.router, prefix="/api/v1")
+app.include_router(users_router.router)
 app.include_router(incidents_router.router, prefix="/api/v1")
 app.include_router(alerts_router.router, prefix="/api/v1")
 app.include_router(metrics_router.router, prefix="/api/v1")

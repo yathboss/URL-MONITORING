@@ -493,8 +493,9 @@ def cleanup_old_pings() -> dict:
             cur.execute(
                 """
                 DELETE FROM ping_history
-                WHERE checked_at < NOW() - INTERVAL '30 days'
-                """
+                WHERE checked_at < NOW() - make_interval(days => %s)
+                """,
+                (settings.ping_retention_days,),
             )
             deleted_rows = cur.rowcount
         conn.commit()
@@ -510,3 +511,25 @@ def cleanup_old_pings() -> dict:
             conn.close()
 
     return {"deleted_rows": deleted_rows}
+
+
+@celery_app.task(name="app.worker.tasks.restore_public_workspace")
+def restore_public_workspace() -> dict:
+    """Daily: restore the shared admin login and its monitors."""
+    from app.public_workspace import seed_public_workspace
+
+    conn = None
+    try:
+        conn = _get_sync_conn()
+        with conn.cursor() as cur:
+            count = seed_public_workspace(cur)
+        conn.commit()
+        return {"monitors": count}
+    except Exception:
+        logger.exception("[restore_public_workspace] Failed to restore admin workspace")
+        if conn is not None:
+            conn.rollback()
+        return {"monitors": 0}
+    finally:
+        if conn is not None:
+            conn.close()

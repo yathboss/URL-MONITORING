@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     environment: str = "development"
     # Extra comma-separated CORS origins (e.g. the deployed frontend URL).
     cors_origins: str = ""
+    # Shared admin login shown on the sign-in page (see app/public_workspace.py).
+    admin_login_email: str = "admin@uptimemonitor.dev"
+    ping_retention_days: int = 30
 
     # Email (SMTP) settings for alert notifications. Optional: the app boots
     # without them; alert delivery simply reports "SMTP not configured".

@@ -3,7 +3,10 @@ import os
 import bcrypt
 from urllib.parse import urlparse
 
+from app.public_workspace import seed_public_workspace
+
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/uptime_monitor")
+IS_PRODUCTION = os.getenv("ENVIRONMENT", "development") == "production"
 
 
 def migrate_url_uniqueness(cur):
@@ -227,6 +230,13 @@ def seed_admin_accounts(cur):
     print(f"Seeded {len(admin_accounts)} admin accounts.")
 
 
+def remove_dev_admin_accounts(cur):
+    """Production never keeps the development admins (weak shared password)."""
+    cur.execute("DELETE FROM users WHERE email = ANY(%s)", (ADMIN_EMAILS,))
+    if cur.rowcount:
+        print(f"Removed {cur.rowcount} development admin accounts.")
+
+
 def init_db():
     try:
         print("Connecting to PostgreSQL...")
@@ -309,8 +319,14 @@ def init_db():
         print("Indexing ping history...")
         migrate_ping_history_index(cur)
 
-        print("Seeding admin accounts...")
-        seed_admin_accounts(cur)
+        if IS_PRODUCTION:
+            remove_dev_admin_accounts(cur)
+        else:
+            print("Seeding admin accounts...")
+            seed_admin_accounts(cur)
+
+        print("Seeding admin workspace...")
+        print(f"Seeded admin login with {seed_public_workspace(cur)} monitors.")
         
         print("Successfully initialized all database tables!")
         cur.close()

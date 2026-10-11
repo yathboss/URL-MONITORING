@@ -34,6 +34,10 @@ celery_app.config_from_object(
                 "task": "app.worker.tasks.cleanup_old_pings",
                 "schedule": crontab(hour=2, minute=0),
             },
+            "restore-public-workspace": {
+                "task": "app.worker.tasks.restore_public_workspace",
+                "schedule": crontab(hour=3, minute=0),
+            },
         },
     }
 )

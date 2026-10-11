@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ShieldCheck, Eye, EyeOff, Copy, Check, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getApiErrorMessage, loginUser } from '../api/client';
 import { Toast } from '../components/ui/Toast';
 import { isValidEmail } from '../utils/validation';
+
+const ADMIN_LOGIN_EMAIL = import.meta.env.VITE_ADMIN_LOGIN_EMAIL ?? 'admin@uptimemonitor.dev';
+const ADMIN_LOGIN_PASSWORD = import.meta.env.VITE_ADMIN_LOGIN_PASSWORD ?? 'Admin@2026';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -12,6 +15,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -25,15 +29,36 @@ export function LoginPage() {
       return;
     }
 
+    await signIn(normalizedEmail, password);
+  };
+
+  const signIn = async (username: string, secret: string) => {
     setLoading(true);
     try {
-      const data = await loginUser({ username: normalizedEmail, password });
+      const data = await loginUser({ username, password: secret });
       login(data.access_token);
       navigate('/dashboard');
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to login'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAdminSignIn = () => {
+    setError(null);
+    setEmail(ADMIN_LOGIN_EMAIL);
+    setPassword(ADMIN_LOGIN_PASSWORD);
+    void signIn(ADMIN_LOGIN_EMAIL, ADMIN_LOGIN_PASSWORD);
+  };
+
+  const copyValue = async (field: 'email' | 'password', value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 1500);
+    } catch {
+      // Clipboard can be unavailable (e.g. insecure context); values stay visible.
     }
   };
 
@@ -125,6 +150,44 @@ export function LoginPage() {
           
           <div className="auth-footer">
             Don't have an account? <Link to="/signup">Sign up</Link>
+          </div>
+
+          <div className="auth-admin-card">
+            <div className="auth-admin-card-header">
+              <ShieldCheck size={16} />
+              Admin access
+            </div>
+            <p className="auth-admin-card-subtitle">
+              Explore the full admin console with live monitors.
+            </p>
+            {([
+              ['email', 'Email', ADMIN_LOGIN_EMAIL],
+              ['password', 'Password', ADMIN_LOGIN_PASSWORD],
+            ] as const).map(([field, label, value]) => (
+              <div className="auth-admin-row" key={field}>
+                <span className="auth-admin-row-label">{label}</span>
+                <span className="auth-admin-row-value">
+                  <span>{value}</span>
+                  <button
+                    type="button"
+                    className="auth-admin-copy"
+                    onClick={() => copyValue(field, value)}
+                    aria-label={`Copy admin ${label.toLowerCase()}`}
+                  >
+                    {copiedField === field ? <Check size={14} /> : <Copy size={14} />}
+                  </button>
+                </span>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="auth-admin-button"
+              onClick={handleAdminSignIn}
+              disabled={loading}
+            >
+              {loading ? 'Signing in...' : 'Sign in as Admin'}
+              {!loading && <ArrowRight size={16} />}
+            </button>
           </div>
         </div>
       </div>

@@ -3,10 +3,17 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.auth import get_current_user, require_admin
+from app.config import settings
 from app.database import get_connection
 from app.models import AdminUserOverview, UserRead, UserUpdate
 
 router = APIRouter(prefix="/api/v1/users", tags=["users"])
+
+
+def _ensure_not_managed(email: str) -> None:
+    """The shared admin login is restored automatically; keep it intact."""
+    if email.lower() == settings.admin_login_email.lower():
+        raise HTTPException(status_code=403, detail="This account is managed by the system")
 
 
 @router.get("", response_model=list[AdminUserOverview])
@@ -38,6 +45,7 @@ async def update_user(
         existing = await conn.fetchrow("SELECT * FROM users WHERE id = $1", user_id)
         if not existing:
             raise HTTPException(status_code=404, detail="User not found")
+        _ensure_not_managed(existing["email"])
 
         new_name = payload.full_name if payload.full_name else existing["full_name"]
         new_email = payload.email if payload.email else existing["email"]
@@ -70,6 +78,10 @@ async def delete_user(user_id: int, current_user: Annotated[UserRead, Depends(re
         raise HTTPException(status_code=400, detail="You cannot delete yourself")
 
     async with get_connection() as conn:
+        email = await conn.fetchval("SELECT email FROM users WHERE id = $1", user_id)
+        if email is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        _ensure_not_managed(email)
         result = await conn.execute("DELETE FROM users WHERE id = $1", user_id)
         if result == "DELETE 0":
             raise HTTPException(status_code=404, detail="User not found")
