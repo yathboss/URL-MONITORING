@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     api_key: str
     secret_key: str = "default-insecure-secret-key"
     environment: str = "development"
+    # Extra comma-separated CORS origins (e.g. the deployed frontend URL).
+    cors_origins: str = ""
 
     # Email (SMTP) settings for alert notifications. Optional: the app boots
     # without them; alert delivery simply reports "SMTP not configured".

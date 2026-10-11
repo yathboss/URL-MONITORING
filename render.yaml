@@ -1,0 +1,66 @@
+# Render Blueprint — deploys the whole stack on Render's free tier.
+# Render dashboard -> New -> Blueprint -> pick this repo.
+#
+# If Render appends a suffix to a service URL (name already taken), update
+# CORS_ORIGINS / VITE_API_BASE_URL below to the real URLs and redeploy.
+
+databases:
+  - name: urlmon-db
+    plan: free
+    databaseName: uptime_monitor
+    user: uptime
+
+services:
+  - type: keyvalue
+    name: urlmon-redis
+    plan: free
+    ipAllowList: [] # internal connections only
+
+  - type: web
+    name: urlmon-api-yathboss
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: sh start-render.sh
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: urlmon-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: urlmon-redis
+          property: connectionString
+      - key: API_KEY
+        generateValue: true
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production
+      - key: CORS_ORIGINS
+        value: https://urlmon-yathboss.onrender.com
+      - key: CELERY_CONCURRENCY
+        value: "20"
+
+  - type: web
+    name: urlmon-yathboss
+    runtime: static
+    buildCommand: cd frontend && npm ci --legacy-peer-deps && npm run build
+    staticPublishPath: ./frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://urlmon-api-yathboss.onrender.com
+      - key: VITE_WS_URL
+        value: wss://urlmon-api-yathboss.onrender.com/ws
+      - key: VITE_API_KEY
+        fromService:
+          type: web
+          name: urlmon-api-yathboss
+          envVarKey: API_KEY

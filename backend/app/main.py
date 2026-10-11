@@ -71,6 +71,7 @@ app.add_middleware(
         # Expo web preview of the mobile app (native app is not CORS-bound)
         "http://localhost:8081",
         "http://127.0.0.1:8081",
+        *[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
     ],
     allow_credentials=True,
     allow_methods=["*"],
