@@ -13,7 +13,7 @@ const navGroups = [
     items: [
       { to: '/dashboard', label: 'Home', icon: 'ti-home-2' },
       { to: '/monitors', label: 'Monitors', icon: 'ti-radar-2', countKey: 'urlCount' },
-      { to: '/incidents', label: 'Incidents', icon: 'ti-alert-triangle', count: 3 },
+      { to: '/incidents', label: 'Incidents', icon: 'ti-alert-triangle' },
       { to: '/bug-reports', label: 'Bug Reports', icon: 'ti-bug' },
       { to: '/status-pages', label: 'Status Pages', icon: 'ti-world-share', adminOnly: true },
     ],
@@ -23,7 +23,7 @@ const navGroups = [
     adminOnly: true,
     items: [
       { to: '/maintenance', label: 'Maintenance', icon: 'ti-calendar-time' },
-      { to: '/alerts', label: 'Alerts', icon: 'ti-bell-ringing', count: 4 },
+      { to: '/alerts', label: 'Alerts', icon: 'ti-bell-ringing' },
       { to: '/reports', label: 'Reports', icon: 'ti-file-analytics' },
     ],
   },
@@ -68,7 +68,7 @@ export function Sidebar({ urlCount }: SidebarProps) {
           <div className="sidebar-group" key={group.label}>
             <div className="sidebar-group-label">{group.label}</div>
             {group.items.map((item) => {
-              const count = item.countKey === 'urlCount' ? urlCount : item.count;
+              const count = item.countKey === 'urlCount' ? urlCount : undefined;
               return (
                 <NavLink
                   key={item.to}
